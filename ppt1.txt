@@ -1,0 +1,158 @@
+Graph Neural Networks for Recommender Systems
+Ritish Shrirao (IMT2022003)
+Mallikarjun Chakoti (IMT2022116)
+Shashwat Sabharwal (IMT2022573)
+
+April 1, 2026
+
+GNNs for Recommendation
+
+April 1, 2026
+
+1/6
+
+Project Overview
+
+The Goal
+To evaluate the performance of Graph Neural Networks (GNNs) on Recommender System
+tasks using real-world datasets.
+
+The Task: Link Prediction
+Objective: Predict missing edges between nodes.
+Real-world analogy:
+Will User u watch Movie m?
+Will User u visit Business b?
+Is Product A related to Product B?
+
+GNNs for Recommendation
+
+April 1, 2026
+
+2/6
+
+Dataset Selection & Semantics
+We selected the following datasets for our task:
+Dataset
+
+Graph Type
+
+1. MovieLens 1M
+
+Heterogeneous
+
+# Nodes
+
+# Edges
+
+Feat.
+
+Classes
+
+9,923
+
+1,000,209
+
+18 / 30
+
+Link Prediction (2)
+
+13,954,819
+
+300
+
+Link Prediction(2)
+
+491,722
+
+767
+
+10
+
+Nodes: 6,040 Users, 3,883 Movies. Task: Predict user-movie interactions.
+
+2. Yelp
+
+Heterogeneous
+
+716,847
+
+Nodes: Users & Businesses. Task: Predict customer-business interactions.
+
+3. Amazon (Computers)
+
+Homogeneous
+
+13,752
+
+Nodes: Products. Task: Product category prediction & co-purchase modeling.
+
+GNNs for Recommendation
+
+April 1, 2026
+
+3/6
+
+Why Node Features AND Structure?
+
+Q: Why are both strictly necessary for this task?
+
+1. Node Features (Content)
+
+2. Graph Structure (Context)
+
+Provide semantic identity.
+Limitation: A user’s demographic alone
+cannot predict exactly which specific
+movie they will watch next without
+history.
+
+Captures collaborative behavior (e.g.,
+”People who bought X also bought Y”).
+Limitation: Cannot handle ”Cold Start”
+(new items with no edges) without
+features.
+
+Conclusion: Recommendation requires both personal attributes AND relational context.
+
+GNNs for Recommendation
+
+April 1, 2026
+
+4/6
+
+Complementary Nature of Data
+
+Q: How do node features complement the graph structure?
+1 Enriching Message Passing:
+Structure defines where information flows (the neighborhood).
+Features define what information flows (the semantic payload).
+2
+
+Multi-hop Reasoning:
+A GNN aggregates neighbor features to generate an embedding.
+Example: If a user is connected to many ”Horror” movies (feature), the user node learns a
+”Horror-fan” representation (structure + feature), even if the user has no explicit ”Horror”
+tag.
+
+GNNs for Recommendation
+
+April 1, 2026
+
+5/6
+
+Proposed Methodology
+
+We will perform an Empirical Comparison on Link Prediction using:
+1. GCN (Graph Convolutional Network) Baseline approach.
+2. GraphSAGE (Sample and Aggregate) Good for large datasets where full-batch training is
+expensive.
+3. GAT (Graph Attention Network) Uses attention mechanisms to weigh neighbors differently.
+Crucial for recommendation.
+
+GNNs for Recommendation
+
+April 1, 2026
+
+6/6
+
+

@@ -1,0 +1,149 @@
+Project Milestones
+
+1. Proposal and Motivation (Weight: 10 marks)
+5-minute presentations on 12 Feb 2026
+
+2. Empirical Comparisons of Three GNNs (Weight: 10 marks)
+3. Additional Insights (Weight: 10 marks)
+10-15 minute presentations on 21 April 2026
+
+0 / 10
+
+Proposal, Motivation (Weight: 10 marks)
+1. Group & Data: Introduce team members and select three real-world datasets
+(e.g., from torch_geometric.datasets) other than Cora, Citeseer, Pubmed
+2. Dataset Specs: Detail the semantics of nodes, edges, and node features for all
+three datasets
+3. Task Definition: Define the graph neural network task (e.g., node classification)
+4. Explicitly answer:
+a. Why are both node features and structural edges necessary for this
+specific task?
+b. How do the node features complement the graph structure?
+
+5-minute presentations on 12 Feb 2026
+
+1 / 10
+
+Methodology and Empirical Comparison (Weight: 10
+marks)
+1. Model Selection: Select three distinct GNN architectures suitable for the task
+defined in Milestone 1 (e.g., from
+https://pytorch-geometric.readthedocs.io/en/latest/modules/nn.html)
+2. Experiments: Run all 3 GNNs on all 3 datasets.
+3. Optimization: Tune hyperparameters for the best configuration for each
+model/dataset pair.
+4. Benchmarking: Compare performance across datasets using a primary metric
+(e.g., Accuracy, F1-Score).
+
+10-15 minute presentations on 21 April 2026
+
+2 / 10
+
+Insights and Analysis (Weight: 5 + 5 marks)
+Any two of the following:
+1. Ablation Studies
+2. Visualisation (e.g., TSNE)
+3. Efficiency Metrics
+4. Robustness Analysis
+5. Error Analysis by Graph Topology
+6. Model Explainability
+10-15 minute presentations on 21 April 2026
+
+3 / 10
+
+Analyses on the Largest Dataset
+
+● Select the largest of the three datasets
+● Choose any two of the six analysis types
+● Run those two analyses across all three GNN models on the largest
+dataset
+
+4 / 10
+
+1. Ablation Studies
+● Systematically disable specific model components to quantify their
+contribution.
+● Verify if sophisticated mechanisms (graph structure or deep layers)
+are actually necessary.
+● Isolate sources of overfitting or performance gains.
+Examples
+● Replace the adjacency matrix with an Identity matrix to test if the
+model outperforms a standard MLP.
+● Replace node features with constant vectors to test if the model
+can learn purely from graph topology.
+● Compare performance across 2, 4, and 8 layers to identify
+"oversmoothing" issues.
+
+5 / 10
+
+2. Visualisation
+● Project high-dimensional node representations into 2D space.
+● Qualitatively assess how well the model separates different
+classes.
+● Visually identify distinct clusters or confused boundaries.
+Examples
+● Plot 2D embeddings colored by ground-truth class to demonstrate
+clear cluster separation.
+● Use distinct marker shapes for misclassified nodes to see if they
+cluster at decision boundaries.
+
+6 / 10
+
+3. Efﬁciency Metrics
+● Evaluate the computational ‘cost’ of achieving model accuracy.
+● Compare resource consumption across different GNN
+architectures.
+Examples
+● Specific comparison of average training time per epoch and total
+inference latency.
+● Plot accuracy against the total count of trainable parameters for
+each model.
+● Log and compare the peak GPU VRAM usage required for each
+architecture.
+
+7 / 10
+
+4. Robustness Analysis
+● Test model stability against imperfect or noisy data.
+● Measure how drastically performance degrades under noise.
+Examples
+● Plot accuracy degradation curves when randomly removing 10% to
+50% of graph edges.
+● Add Gaussian noise to node features to simulate sensor errors and
+re-evaluate accuracy.
+● Compare model performance when training on severely reduced
+datasets (e.g., only 5% of labels).
+
+8 / 10
+
+5. Error Analysis by Graph Topology
+● Correlate prediction errors with specific structural properties of the
+nodes.
+● Determine if the model is biased toward specific graph positions
+(e.g., hubs).
+Examples
+● Group test accuracy by node degree (Low vs. High) to see if hubs
+are classified more accurately.
+● Specific analysis of performance on nodes connected to different
+classes vs. same-class neighbors.
+● Compare accuracy on the giant connected component versus
+isolated outlying subgraphs.
+
+9 / 10
+
+6. Model Explainability
+● Uncover why the model made specific predictions.
+● Identify which neighbours or features influenced the decision the
+most.
+● Validate that the model is learning meaningful structural motifs.
+Examples
+● Visualize GAT attention scores as edge thickness to show which
+neighbors were prioritized.
+● Use GNNExplainer to highlight the specific sub-graph responsible
+for a node's classification.
+● Measure the drop in confidence when specific node features are
+masked or randomized.
+
+10 / 10
+
+
