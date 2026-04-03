@@ -6,81 +6,74 @@ This project implements your remaining milestones after Task 1.
 
 ### Task 2: Empirical Comparison (10 marks)
 - 3 datasets: MovieLens-1M, Yelp, Amazon Computers
-- 3 GNN models: GCN, GraphSAGE, GAT
-- Link Prediction setup for all datasets
-- Hyperparameter tuning for each dataset-model pair
-- Benchmark metrics: AUC, AP, Accuracy, F1
+- 4 GNN models: GCN, GraphSAGE, GAT, LightGCN
+# GNN Project — Link-Prediction Benchmark
 
-### Task 3: Additional Insights (10 marks total, 5+5)
-Performed on the largest dataset automatically (by node count):
-- Analysis 1: Efficiency Metrics
-- Analysis 2: Robustness Analysis
+This repository runs link-prediction experiments and additional analyses across standard recommender / graph datasets.
 
-All analyses are run across all three GNN models.
+Implemented features
+- Datasets: MovieLens-1M, Yelp, Amazon Computers (via PyG)
+- Models: GCN, GraphSAGE, GAT, LightGCN
+- Tasks: per-dataset hyperparameter tuning, efficiency and robustness analyses on the largest dataset
+- Metrics: AUC, Average Precision (AP), accuracy, F1; plus timing and parameter counts
 
-## Setup
-
-1. Create and activate environment.
-2. Install dependencies:
+Setup
+1. Create and activate a Python 3 virtual environment.
+2. Install requirements:
 
 ```bash
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
-## Run
-
-### Quick smoke test
+Quick start
+- Run the default full pipeline (may be long):
 
 ```bash
-python run_all.py --quick
+python3 run_all.py
 ```
 
-### Faster smoke test on one dataset
+- Recommended A6000-friendly run (fast tuning):
 
 ```bash
-python run_all.py --quick --datasets amazon_computers
+python3 run_all.py --tune-epochs 2 --efficiency-epochs 12 --robustness-epochs 8
 ```
 
-### Full run
+- Run a single dataset or select models:
 
 ```bash
-python run_all.py
+python3 run_all.py --datasets amazon_computers --models gcn,lightgcn --tune-epochs 1
 ```
 
-You can also choose datasets manually:
+- Disable mixed precision or progress bars:
 
 ```bash
-python run_all.py --datasets movielens_1m,yelp,amazon_computers
+python3 run_all.py --no-amp --no-progress
 ```
 
-## Outputs
-
-### Results tables
+Outputs
 - results/task2_empirical_comparison.csv
+- results/task2_tuning_trials.csv
 - results/task2_best_configs.json
 - results/task3_efficiency_metrics.csv
 - results/task3_robustness_analysis.csv
 - results/task3_summary.md
 - results/run_summary.md
+- results/run_config.json
 
-### Plots
-- plots/efficiency_params_vs_auc.png
-- plots/efficiency_time_vs_auc.png
-- plots/robustness_edge_dropout.png
-- plots/robustness_feature_noise.png
-- plots/robustness_train_edge_fraction.png
+Plots are written to the directory passed with `--plot-dir` (default `./plots`).
 
-## Notes for Presentation
+CLI options
+- `--datasets`: comma-separated dataset names
+- `--models`: comma-separated models (gcn, graphsage, gat, lightgcn)
+- `--tune-epochs`, `--efficiency-epochs`, `--robustness-epochs`: epoch counts
+- `--eval-every`: validation interval (epochs)
+- `--early-stopping-patience`: validation patience (0 disables)
+- `--compile`: enable `torch.compile` if available
+- `--no-amp`: disable mixed precision on CUDA
+- `--no-progress`: disable tqdm progress bars
 
-Use the outputs directly in your 10-15 minute presentation:
-- Task 2 section:
-  - Show benchmark table and highlight best model per dataset.
-  - Compare how model ranking changes across datasets.
-- Task 3 section:
-  - Efficiency: show accuracy-cost tradeoff plots.
-  - Robustness: show degradation curves under edge dropout, feature noise, and reduced supervision.
+Notes
+- `run_all.py` performs training during hyperparameter tuning and retrains/evaluates best models during the Task 3 analyses; model objects are not persisted to disk by default (metrics and run metadata are saved). Add `--compile` or `--no-amp` based on your GPU and driver setup.
 
-## Optional Improvement for Even Stronger Submission
+If you want me to save final model checkpoints (one file per best model), I can add that quickly.
 
-- Run each experiment with 3 different seeds and report mean ± std for AUC/AP.
-- Add statistical significance comparison between top two models on each dataset.

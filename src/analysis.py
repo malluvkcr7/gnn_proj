@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import copy
-import time
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
+from tqdm.auto import tqdm
 
 from src.train import TrainConfig, train_one_model
 
@@ -42,10 +42,20 @@ def run_efficiency_metrics(
     best_configs: Dict[str, Dict],
     device: torch.device,
     seed: int,
-    quick: bool,
+    epochs: int,
+    eval_every: int,
+    use_amp: bool,
+    use_compile: bool,
+    show_progress: bool,
+    early_stopping_patience: int,
 ) -> pd.DataFrame:
     rows = []
-    for model_name, cfg in best_configs.items():
+    for model_name, cfg in tqdm(
+        best_configs.items(),
+        desc="Efficiency models",
+        leave=False,
+        disable=not show_progress,
+    ):
         train_cfg = TrainConfig(
             model_name=model_name,
             hidden_dim=cfg["hidden_dim"],
@@ -54,8 +64,13 @@ def run_efficiency_metrics(
             dropout=cfg["dropout"],
             lr=cfg["lr"],
             weight_decay=cfg["weight_decay"],
-            epochs=8 if quick else 40,
+            epochs=epochs,
             gat_heads=cfg.get("gat_heads", 2),
+            eval_every=eval_every,
+            use_amp=use_amp,
+            use_compile=use_compile,
+            show_progress=show_progress,
+            early_stopping_patience=early_stopping_patience,
         )
 
         val_metrics, test_metrics, extras = train_one_model(
@@ -90,6 +105,12 @@ def run_robustness_analysis(
     device: torch.device,
     seed: int,
     quick: bool,
+    epochs: int,
+    eval_every: int,
+    use_amp: bool,
+    use_compile: bool,
+    show_progress: bool,
+    early_stopping_patience: int,
 ) -> pd.DataFrame:
     rows: List[Dict] = []
 
@@ -97,7 +118,12 @@ def run_robustness_analysis(
     noise_levels = [0.1, 0.3] if quick else [0.1, 0.3, 0.5]
     train_edge_keep_levels = [1.0, 0.3] if quick else [1.0, 0.3, 0.1]
 
-    for model_name, cfg in best_configs.items():
+    for model_name, cfg in tqdm(
+        best_configs.items(),
+        desc="Robustness models",
+        leave=False,
+        disable=not show_progress,
+    ):
         base_cfg = TrainConfig(
             model_name=model_name,
             hidden_dim=cfg["hidden_dim"],
@@ -106,8 +132,13 @@ def run_robustness_analysis(
             dropout=cfg["dropout"],
             lr=cfg["lr"],
             weight_decay=cfg["weight_decay"],
-            epochs=5 if quick else 30,
+            epochs=epochs,
             gat_heads=cfg.get("gat_heads", 2),
+            eval_every=eval_every,
+            use_amp=use_amp,
+            use_compile=use_compile,
+            show_progress=show_progress,
+            early_stopping_patience=early_stopping_patience,
         )
 
         for r in edge_drop_levels:

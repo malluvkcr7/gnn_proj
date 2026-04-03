@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
-from torch_geometric.nn import GATConv, GCNConv, SAGEConv
+from torch_geometric.nn import GATConv, GCNConv, LGConv, SAGEConv
 
 
 class GNNEncoder(nn.Module):
@@ -53,8 +53,38 @@ class GNNEncoder(nn.Module):
         return x
 
 
+class LightGCNEncoder(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        num_layers: int,
+        dropout: float = 0.0,
+    ):
+        super().__init__()
+        if num_layers < 1:
+            raise ValueError("num_layers must be >= 1 for LightGCN")
+
+        # LightGCN keeps message passing linear; a projection aligns feature dims.
+        self.input_proj = nn.Linear(in_channels, out_channels, bias=False)
+        self.convs = nn.ModuleList([LGConv() for _ in range(num_layers)])
+        self.dropout = dropout
+
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
+        x = self.input_proj(x)
+        if self.dropout > 0.0:
+            x = F.dropout(x, p=self.dropout, training=self.training)
+
+        embeddings = [x]
+        for conv in self.convs:
+            x = conv(x, edge_index)
+            embeddings.append(x)
+
+        return torch.stack(embeddings, dim=0).mean(dim=0)
+
+
 class LinkPredictor(nn.Module):
-    def __init__(self, encoder: GNNEncoder):
+    def __init__(self, encoder: nn.Module):
         super().__init__()
         self.encoder = encoder
 
