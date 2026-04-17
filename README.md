@@ -14,8 +14,15 @@ This repository runs link-prediction experiments and additional analyses across 
 Implemented features
 - Datasets: MovieLens-1M, Yelp, Amazon Computers (via PyG)
 - Models: GCN, GraphSAGE, GAT, LightGCN
-- Tasks: per-dataset hyperparameter tuning, efficiency and robustness analyses on the largest dataset
+- Tasks: per-dataset hyperparameter tuning, efficiency on the largest dataset, and robustness analyses on all selected datasets
 - Metrics: AUC, Average Precision (AP), accuracy, F1; plus timing and parameter counts
+
+Robustness perturbations
+- Random edge dropout
+- Feature noise injection
+- Reduced train-edge supervision
+- High-degree edge removal (hub-edge attack)
+- High-degree node removal (hub-node attack)
 
 Setup
 1. Create and activate a Python 3 virtual environment.

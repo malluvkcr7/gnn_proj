@@ -119,7 +119,11 @@ def train_one_model(
         weight_decay=config.weight_decay,
     )
     amp_enabled = config.use_amp and device.type == "cuda"
-    scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
+    has_torch_amp = hasattr(torch, "amp") and hasattr(torch.amp, "autocast") and hasattr(torch.amp, "GradScaler")
+    if has_torch_amp:
+        scaler = torch.amp.GradScaler("cuda", enabled=amp_enabled)
+    else:
+        scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
 
     history = []
     train_times = []
@@ -141,7 +145,12 @@ def train_one_model(
         start = time.perf_counter()
 
         optimizer.zero_grad(set_to_none=True)
-        with torch.cuda.amp.autocast(enabled=amp_enabled):
+        if has_torch_amp:
+            autocast_ctx = torch.amp.autocast(device_type="cuda", enabled=amp_enabled)
+        else:
+            autocast_ctx = torch.cuda.amp.autocast(enabled=amp_enabled)
+
+        with autocast_ctx:
             logits = model(train_data.x, train_data.edge_index, train_data.edge_label_index)
             loss = torch.nn.functional.binary_cross_entropy_with_logits(
                 logits,

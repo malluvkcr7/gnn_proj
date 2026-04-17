@@ -18,6 +18,7 @@ class GNNEncoder(nn.Module):
         super().__init__()
         self.model_name = model_name.lower()
         self.dropout = dropout
+        self.activation = F.elu if self.model_name == "gat" else F.relu
 
         if num_layers < 2:
             raise ValueError("num_layers must be >= 2")
@@ -41,13 +42,19 @@ class GNNEncoder(nn.Module):
             heads = 1 if is_last else gat_heads
             concat = not is_last
             out_channels = out_dim if not concat else max(1, out_dim // heads)
-            return GATConv(in_dim, out_channels, heads=heads, concat=concat)
+            return GATConv(
+                in_dim,
+                out_channels,
+                heads=heads,
+                concat=concat,
+                dropout=self.dropout,
+            )
         raise ValueError(f"Unsupported model_name: {self.model_name}")
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
         for conv in self.convs:
             x = conv(x, edge_index)
-            x = F.relu(x)
+            x = self.activation(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.final_conv(x, edge_index)
         return x

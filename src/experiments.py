@@ -58,6 +58,26 @@ def _normalize_models(models: List[str]) -> List[str]:
 def _search_space(model_name: str, quick: bool) -> List[Dict]:
     model_name = model_name.lower()
 
+    if model_name == "gat":
+        base = {
+            "hidden_dim": [64] if quick else [128, 192],
+            "num_layers": [2],
+            "dropout": [0.0, 0.1],
+            "lr": [0.005, 0.001],
+            "weight_decay": [0.0, 1e-5],
+            "out_dim": [64, 128],
+        }
+        keys = list(base.keys())
+        grid = [dict(zip(keys, vals)) for vals in itertools.product(*(base[k] for k in keys))]
+        heads = [2, 4]
+        expanded = []
+        for g in grid:
+            for h in heads:
+                g2 = dict(g)
+                g2["gat_heads"] = h
+                expanded.append(g2)
+        return expanded
+
     if model_name == "lightgcn":
         base = {
             "hidden_dim": [64],
@@ -88,16 +108,6 @@ def _search_space(model_name: str, quick: bool) -> List[Dict]:
 
     keys = list(base.keys())
     grid = [dict(zip(keys, vals)) for vals in itertools.product(*(base[k] for k in keys))]
-
-    if model_name == "gat":
-        heads = [2] if quick else [2, 4]
-        expanded = []
-        for g in grid:
-            for h in heads:
-                g2 = dict(g)
-                g2["gat_heads"] = h
-                expanded.append(g2)
-        return expanded
 
     for g in grid:
         g["gat_heads"] = 1 if model_name == "lightgcn" else 2
@@ -228,6 +238,7 @@ def run_all(
     trial_rows: List[Dict] = []
     best_configs: Dict[str, Dict[str, Dict]] = {}
     bundle_sizes: Dict[str, int] = {}
+    bundles: Dict[str, object] = {}
     largest_bundle = None
     largest_name = None
 
@@ -257,6 +268,7 @@ def run_all(
         bundle.train_data = train_data
         bundle.val_data = val_data
         bundle.test_data = test_data
+        bundles[dataset_name] = bundle
         bundle_sizes[dataset_name] = int(data.num_nodes)
 
         if largest_bundle is None or data.num_nodes > largest_bundle.data.num_nodes:
@@ -359,19 +371,24 @@ def run_all(
     eff_csv = os.path.join(out_dir, "task3_efficiency_metrics.csv")
     eff_df.to_csv(eff_csv, index=False)
 
-    rob_df = run_robustness_analysis(
-        largest_bundle,
-        best_configs=largest_model_cfgs,
-        device=device,
-        seed=seed,
-        quick=quick,
-        epochs=robustness_epochs,
-        eval_every=eval_every,
-        use_amp=use_amp,
-        use_compile=use_compile,
-        show_progress=show_progress,
-        early_stopping_patience=early_stopping_patience,
-    )
+    rob_frames = []
+    for dataset_name in datasets:
+        rob_frames.append(
+            run_robustness_analysis(
+                bundles[dataset_name],
+                best_configs=best_configs[dataset_name],
+                device=device,
+                seed=seed,
+                quick=quick,
+                epochs=robustness_epochs,
+                eval_every=eval_every,
+                use_amp=use_amp,
+                use_compile=use_compile,
+                show_progress=show_progress,
+                early_stopping_patience=early_stopping_patience,
+            )
+        )
+    rob_df = pd.concat(rob_frames, ignore_index=True)
     rob_csv = os.path.join(out_dir, "task3_robustness_analysis.csv")
     rob_df.to_csv(rob_csv, index=False)
 
@@ -385,7 +402,8 @@ def run_all(
         "# Task 2 + Task 3 Execution Summary",
         "",
         f"Device: {device}",
-        f"Largest dataset selected automatically: {largest_name}",
+        f"Largest dataset selected automatically (for efficiency): {largest_name}",
+        f"Robustness datasets: {', '.join(datasets)}",
         f"Models: {', '.join(models)}",
         f"Epochs (tune / efficiency / robustness): {tune_epochs} / {efficiency_epochs} / {robustness_epochs}",
         "",
