@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import re
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -169,13 +169,18 @@ def run_robustness_analysis(
     use_compile: bool,
     show_progress: bool,
     early_stopping_patience: int,
+    enabled_perturbations: Sequence[str] | None = None,
+    high_degree_node_levels_override: Sequence[float] | None = None,
 ) -> pd.DataFrame:
     rows: List[Dict] = []
+    enabled = set(enabled_perturbations) if enabled_perturbations is not None else None
 
     edge_drop_levels = [0.1, 0.3] if quick else [0.1, 0.3, 0.5]
     noise_levels = [0.1, 0.3] if quick else [0.1, 0.3, 0.5]
     train_edge_keep_levels = [1.0, 0.3] if quick else [1.0, 0.3, 0.1]
     high_degree_node_levels = [0.01, 0.03] if quick else [0.01, 0.03, 0.05]
+    if high_degree_node_levels_override is not None:
+        high_degree_node_levels = [float(x) for x in high_degree_node_levels_override]
     high_degree_edge_levels = [0.1, 0.3] if quick else [0.1, 0.3, 0.5]
 
     for model_name, cfg in tqdm(
@@ -201,106 +206,131 @@ def run_robustness_analysis(
             early_stopping_patience=early_stopping_patience,
         )
 
-        for r in edge_drop_levels:
-            perturbed_train = _edge_dropout(bundle.train_data, r)
-            perturbed_val = _edge_dropout(bundle.val_data, r)
-            perturbed_test = _edge_dropout(bundle.test_data, r)
+        if enabled is None or "edge_dropout" in enabled:
+            for r in edge_drop_levels:
+                perturbed_train = _edge_dropout(bundle.train_data, r)
+                perturbed_val = _edge_dropout(bundle.val_data, r)
+                perturbed_test = _edge_dropout(bundle.test_data, r)
 
-            _, test_metrics, _ = train_one_model(
-                perturbed_train, perturbed_val, perturbed_test, base_cfg, seed=seed, device=device
-            )
-            rows.append(
-                {
-                    "dataset": bundle.name,
-                    "model": model_name,
-                    "perturbation": "edge_dropout",
-                    "severity": r,
-                    "test_auc": test_metrics["auc"],
-                    "test_ap": test_metrics["ap"],
-                }
-            )
+                _, test_metrics, _ = train_one_model(
+                    perturbed_train,
+                    perturbed_val,
+                    perturbed_test,
+                    base_cfg,
+                    seed=seed,
+                    device=device,
+                )
+                rows.append(
+                    {
+                        "dataset": bundle.name,
+                        "model": model_name,
+                        "perturbation": "edge_dropout",
+                        "severity": r,
+                        "test_auc": test_metrics["auc"],
+                        "test_ap": test_metrics["ap"],
+                    }
+                )
 
-        for s in noise_levels:
-            perturbed_train = _feature_noise(bundle.train_data, s)
-            perturbed_val = _feature_noise(bundle.val_data, s)
-            perturbed_test = _feature_noise(bundle.test_data, s)
+        if enabled is None or "feature_noise" in enabled:
+            for s in noise_levels:
+                perturbed_train = _feature_noise(bundle.train_data, s)
+                perturbed_val = _feature_noise(bundle.val_data, s)
+                perturbed_test = _feature_noise(bundle.test_data, s)
 
-            _, test_metrics, _ = train_one_model(
-                perturbed_train, perturbed_val, perturbed_test, base_cfg, seed=seed, device=device
-            )
-            rows.append(
-                {
-                    "dataset": bundle.name,
-                    "model": model_name,
-                    "perturbation": "feature_noise",
-                    "severity": s,
-                    "test_auc": test_metrics["auc"],
-                    "test_ap": test_metrics["ap"],
-                }
-            )
+                _, test_metrics, _ = train_one_model(
+                    perturbed_train,
+                    perturbed_val,
+                    perturbed_test,
+                    base_cfg,
+                    seed=seed,
+                    device=device,
+                )
+                rows.append(
+                    {
+                        "dataset": bundle.name,
+                        "model": model_name,
+                        "perturbation": "feature_noise",
+                        "severity": s,
+                        "test_auc": test_metrics["auc"],
+                        "test_ap": test_metrics["ap"],
+                    }
+                )
 
-        for k in train_edge_keep_levels:
-            reduced_train = _subsample_train_edges(bundle.train_data, k)
+        if enabled is None or "train_edge_fraction" in enabled:
+            for k in train_edge_keep_levels:
+                reduced_train = _subsample_train_edges(bundle.train_data, k)
 
-            _, test_metrics, _ = train_one_model(
-                reduced_train,
-                bundle.val_data,
-                bundle.test_data,
-                base_cfg,
-                seed=seed,
-                device=device,
-            )
-            rows.append(
-                {
-                    "dataset": bundle.name,
-                    "model": model_name,
-                    "perturbation": "train_edge_fraction",
-                    "severity": k,
-                    "test_auc": test_metrics["auc"],
-                    "test_ap": test_metrics["ap"],
-                }
-            )
+                _, test_metrics, _ = train_one_model(
+                    reduced_train,
+                    bundle.val_data,
+                    bundle.test_data,
+                    base_cfg,
+                    seed=seed,
+                    device=device,
+                )
+                rows.append(
+                    {
+                        "dataset": bundle.name,
+                        "model": model_name,
+                        "perturbation": "train_edge_fraction",
+                        "severity": k,
+                        "test_auc": test_metrics["auc"],
+                        "test_ap": test_metrics["ap"],
+                    }
+                )
 
-        for r in high_degree_edge_levels:
-            perturbed_train = _remove_high_degree_edges(bundle.train_data, r)
-            perturbed_val = _remove_high_degree_edges(bundle.val_data, r)
-            perturbed_test = _remove_high_degree_edges(bundle.test_data, r)
+        if enabled is None or "high_degree_edge_removal" in enabled:
+            for r in high_degree_edge_levels:
+                perturbed_train = _remove_high_degree_edges(bundle.train_data, r)
+                perturbed_val = _remove_high_degree_edges(bundle.val_data, r)
+                perturbed_test = _remove_high_degree_edges(bundle.test_data, r)
 
-            _, test_metrics, _ = train_one_model(
-                perturbed_train, perturbed_val, perturbed_test, base_cfg, seed=seed, device=device
-            )
-            rows.append(
-                {
-                    "dataset": bundle.name,
-                    "model": model_name,
-                    "perturbation": "high_degree_edge_removal",
-                    "severity": r,
-                    "test_auc": test_metrics["auc"],
-                    "test_ap": test_metrics["ap"],
-                }
-            )
+                _, test_metrics, _ = train_one_model(
+                    perturbed_train,
+                    perturbed_val,
+                    perturbed_test,
+                    base_cfg,
+                    seed=seed,
+                    device=device,
+                )
+                rows.append(
+                    {
+                        "dataset": bundle.name,
+                        "model": model_name,
+                        "perturbation": "high_degree_edge_removal",
+                        "severity": r,
+                        "test_auc": test_metrics["auc"],
+                        "test_ap": test_metrics["ap"],
+                    }
+                )
 
-        for r in high_degree_node_levels:
-            perturbed_train = _remove_high_degree_nodes(bundle.train_data, r)
-            perturbed_val = _remove_high_degree_nodes(bundle.val_data, r)
-            perturbed_test = _remove_high_degree_nodes(bundle.test_data, r)
+        if enabled is None or "high_degree_node_removal" in enabled:
+            for r in high_degree_node_levels:
+                perturbed_train = _remove_high_degree_nodes(bundle.train_data, r)
+                perturbed_val = _remove_high_degree_nodes(bundle.val_data, r)
+                perturbed_test = _remove_high_degree_nodes(bundle.test_data, r)
 
-            if perturbed_train is None or perturbed_val is None or perturbed_test is None:
-                continue
+                if perturbed_train is None or perturbed_val is None or perturbed_test is None:
+                    continue
 
-            _, test_metrics, _ = train_one_model(
-                perturbed_train, perturbed_val, perturbed_test, base_cfg, seed=seed, device=device
-            )
-            rows.append(
-                {
-                    "dataset": bundle.name,
-                    "model": model_name,
-                    "perturbation": "high_degree_node_removal",
-                    "severity": r,
-                    "test_auc": test_metrics["auc"],
-                    "test_ap": test_metrics["ap"],
-                }
-            )
+                _, test_metrics, _ = train_one_model(
+                    perturbed_train,
+                    perturbed_val,
+                    perturbed_test,
+                    base_cfg,
+                    seed=seed,
+                    device=device,
+                )
+                rows.append(
+                    {
+                        "dataset": bundle.name,
+                        "model": model_name,
+                        "perturbation": "high_degree_node_removal",
+                        "severity": r,
+                        "test_auc": test_metrics["auc"],
+                        "test_ap": test_metrics["ap"],
+                    }
+                )
 
     return pd.DataFrame(rows)
 
