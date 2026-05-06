@@ -82,5 +82,5 @@ CLI options
 Notes
 - `run_all.py` performs training during hyperparameter tuning and retrains/evaluates best models during the Task 3 analyses; model objects are not persisted to disk by default (metrics and run metadata are saved). Add `--compile` or `--no-amp` based on your GPU and driver setup.
 
-If you want me to save final model checkpoints (one file per best model), I can add that quickly.
+
 
